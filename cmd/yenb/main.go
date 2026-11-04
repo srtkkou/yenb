@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log"
 	"log/slog"
+	"os"
 
 	"github.com/srtkkou/yenb/lib"
 )
@@ -31,4 +32,10 @@ func main() {
 	configJSON := json.RawMessage([]byte(config.String()))
 	lib.Log().InfoContext(config.Context(), "yenb:start",
 		slog.Any("config", configJSON))
+	// Initialize env variable editor.
+	_, err := lib.NewEnvEditor()
+	if err != nil {
+		lib.Log().Errorf(err.Error(), err)
+		os.Exit(1)
+	}
 }
