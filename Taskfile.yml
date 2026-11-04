@@ -1,0 +1,63 @@
+version: '3'
+
+includes:
+  build: ./Taskfile_{{OS}}.yml
+
+env:
+  CGO_ENABLED: 0
+
+vars:
+  VERSION: "1.0.0"
+  COMMIT_HASH:
+    sh: git rev-parse HEAD
+  COMMIT_AT:
+    sh: git log -1 --pretty=format:%ad --date=format:"%Y%m%d-%H%M%S"
+
+tasks:
+  default:
+    cmds:
+      - task: test
+
+  fmt:
+    cmd: go fmt ./...
+
+  vet:
+    deps: [fmt]
+    cmd: go vet ./...
+
+  fix:
+    deps: [vet]
+    cmd: go fix ./...
+
+  staticcheck:
+    deps: [fix]
+    cmd: go tool staticcheck ./...
+
+  test:
+    deps: [staticcheck]
+    cmd: go test -cover ./...
+    env:
+      YENB_APP_ENV: test
+
+  test-v:
+    deps: [staticcheck]
+    cmd: go test -cover -v ./...
+    env:
+      YENB_APP_ENV: test
+
+  build:
+    deps: [test]
+    cmds:
+      - go build -ldflags "{{.FLAG_COMMIT_HASH}} {{.FLAG_COMMIT_AT}}" -o ./yenb.exe ./cmd/yenb/main.go
+    vars:
+      FLAG_COMMIT_HASH: "-X main.CommitHash={{.COMMIT_HASH}}"
+      FLAG_COMMIT_AT: "-X main.CommitAt={{.COMMIT_AT}}"
+    sources:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+    generates:
+      - yenb.exe
+
+  clean:
+    cmd: rm -f yenb.exe
