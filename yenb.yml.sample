@@ -1,0 +1,13 @@
+version: "1"
+
+user:
+  envs:
+    GOROOT:
+      type: REG_EXPAND_SZ
+      value: D:/app/go/go1.27.3.windows-amd64/go
+    GOPATH:
+      type: REG_EXPAND_SZ
+      value: D:/app/go/gopath
+  paths:
+    - ${GOROOT}/bin
+    - ${GOPATH}/bin

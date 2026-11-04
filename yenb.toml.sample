@@ -1,9 +1,0 @@
-[user.env]
-GOROOT = "D:/app/go/go1.27.3.windows-amd64/go"
-GOPATH = "D:/app/go/gopath"
-
-[user]
-path = [
-  "${GOROOT}/bin",
-  "${GOPATH}/bin",
-]
