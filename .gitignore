@@ -34,3 +34,6 @@ go.work.sum
 
 # task command cache dir
 .task/
+
+# Log
+*.log
