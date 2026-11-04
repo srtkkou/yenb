@@ -28,6 +28,7 @@ func main() {
 	config.SetCommitHash(CommitHash)
 	config.SetCommitAt(CommitAt)
 	// Initialize log.
+	configJSON := json.RawMessage([]byte(config.String()))
 	lib.Log().Info("yenb:start",
-		slog.Any("config", json.RawMessage([]byte(config.String()))))
+		slog.Any("config", configJSON))
 }
