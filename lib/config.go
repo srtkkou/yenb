@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/goark/errs"
-	"github.com/pelletier/go-toml/v2"
+	"github.com/goccy/go-yaml"
 )
 
 // Config for app.
@@ -27,15 +27,22 @@ type AppConfig struct {
 	isDebug    bool              // Debug mode flag.
 	os         string            // Operating system.
 	exePath    string            // Path to executable.
-	userEnvs   map[string]string // Environment variables for user.
+	userEnvs   map[string]envVar // Environment variables for user.
 	userPaths  []string          // Paths to add to user PATH env.
 }
 
-type tomlStructure struct {
+// Structure of config file.
+type configFile struct {
 	User struct {
-		Envs  map[string]string `toml:"env"`  // Environment variables.
-		Paths []string          `toml:"path"` // Paths
-	} `toml:"user"`
+		Envs  map[string]envVar
+		Paths []string
+	}
+}
+
+// Environment variable.
+type envVar struct {
+	Type  string
+	Value string
 }
 
 const (
@@ -55,8 +62,8 @@ var (
 var (
 	ErrConfigExePath  = errors.New("ErrConfigExePath")
 	ErrConfigAbsPath  = errors.New("ErrConfigAbsPath")
-	ErrConfigReadTOML = errors.New("ErrConfigReadTOML")
-	ErrConfigLoadTOML = errors.New("ErrConfigLoadTOML")
+	ErrConfigReadYAML = errors.New("ErrConfigReadYAML")
+	ErrConfigLoadYAML = errors.New("ErrConfigLoadYAML")
 )
 
 // Get or initialize config.
@@ -91,11 +98,13 @@ func (c *AppConfig) String() string {
 	b.WriteString(strconv.Quote(c.exePath))
 	b.WriteString(`,"userEnvs":{`)
 	if len(c.userEnvs) > 0 {
-		for key, value := range c.userEnvs {
-			b.WriteString(strconv.Quote(key))
-			b.WriteString(`:`)
-			b.WriteString(strconv.Quote(value))
-			b.WriteString(`,`)
+		for k, v := range c.userEnvs {
+			b.WriteString(strconv.Quote(k))
+			b.WriteString(`:{"type":`)
+			b.WriteString(strconv.Quote(v.Type))
+			b.WriteString(`,"value":`)
+			b.WriteString(strconv.Quote(v.Value))
+			b.WriteString(`},`)
 		}
 		b.Truncate(b.Len() - 1)
 	}
@@ -185,17 +194,10 @@ func (c *AppConfig) LogPath() string {
 }
 
 // Update user envs.
-func (c *AppConfig) SetUserEnvs(m map[string]string) {
+func (c *AppConfig) SetUserEnvs(m map[string]envVar) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	c.userEnvs = m
-}
-
-// Get user envs.
-func (c *AppConfig) UserEnvs() map[string]string {
-	c.mtx.RLock()
-	defer c.mtx.RUnlock()
-	return c.userEnvs
 }
 
 // Update user paths.
@@ -205,18 +207,12 @@ func (c *AppConfig) SetUserPaths(s []string) {
 	c.userPaths = s
 }
 
-// Get user paths.
-func (c *AppConfig) UserPaths() []string {
-	c.mtx.RLock()
-	defer c.mtx.RUnlock()
-	return c.userPaths
-}
-
-// Get path to TOML file.
-func (c *AppConfig) TOMLPath() string {
-	ext := filepath.Ext(c.ExePath())
-	tomlPath := c.exePath[0:(len(c.exePath)-len(ext))] + ".toml"
-	return tomlPath
+// Get path to YAML file.
+func (c *AppConfig) YAMLPath() string {
+	exePath := c.ExePath()
+	ext := filepath.Ext(exePath)
+	path := c.exePath[0:(len(exePath)-len(ext))] + ".yml"
+	return path
 }
 
 // Load settings.
@@ -225,7 +221,7 @@ func (c *AppConfig) Load() (err error) {
 	if err = c.loadExePath(); err != nil {
 		return err
 	}
-	if err = c.loadTOML(); err != nil {
+	if err = c.loadYAML(); err != nil {
 		return err
 	}
 	return nil
@@ -258,23 +254,23 @@ func (c *AppConfig) loadExePath() (err error) {
 	return nil
 }
 
-// 設定tomlファイルの読み込み
-func (c *AppConfig) loadTOML() error {
+// Load config YAML file.
+func (c *AppConfig) loadYAML() error {
 	// 設定ファイルパスの読み込み
-	tomlPath := c.TOMLPath()
-	blob, err := os.ReadFile(tomlPath)
+	ymlPath := c.YAMLPath()
+	blob, err := os.ReadFile(ymlPath)
 	if err != nil {
-		return errs.Wrap(ErrConfigReadTOML, errs.WithCause(err),
-			errs.WithContext("path", tomlPath))
+		return errs.Wrap(ErrConfigReadYAML, errs.WithCause(err),
+			errs.WithContext("path", ymlPath))
 	}
-	// TOMLの読み込み
-	values := new(tomlStructure)
-	if err := toml.Unmarshal(blob, values); err != nil {
-		return errs.Wrap(ErrConfigLoadTOML, errs.WithCause(err),
-			errs.WithContext("path", tomlPath))
+	// YAMLの読み込み
+	values := new(configFile)
+	if err := yaml.Unmarshal(blob, values); err != nil {
+		return errs.Wrap(ErrConfigLoadYAML, errs.WithCause(err),
+			errs.WithContext("path", ymlPath))
 	}
 	// 値の設定
-	c.SetUserEnvs((values.User.Envs))
-	c.SetUserPaths((values.User.Paths))
+	c.SetUserEnvs(values.User.Envs)
+	c.SetUserPaths(values.User.Paths)
 	return nil
 }
