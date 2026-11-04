@@ -4,7 +4,11 @@ Copyright © 2026 srtkkou <srtkkou@outlook.jp>
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"log"
+	"log/slog"
+
+	"github.com/srtkkou/yenb/lib"
 )
 
 var (
@@ -16,7 +20,14 @@ var (
 
 // Main
 func main() {
-	fmt.Println("yenb")
-	fmt.Printf("CommitHash=%s\n", CommitHash)
-	fmt.Printf("CommitAt=%s\n", CommitAt)
+	// Update config.
+	config := lib.Config()
+	if err := config.Load(); err != nil {
+		log.Fatalf("%+v\n", err)
+	}
+	config.SetCommitHash(CommitHash)
+	config.SetCommitAt(CommitAt)
+	// Initialize log.
+	lib.Log().Info("yenb:start",
+		slog.Any("config", json.RawMessage([]byte(config.String()))))
 }
