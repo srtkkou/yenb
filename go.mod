@@ -6,6 +6,7 @@ tool honnef.co/go/tools/cmd/staticcheck
 
 require (
 	github.com/goark/errs v1.3.4
+	github.com/pelletier/go-toml/v2 v2.4.3
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
