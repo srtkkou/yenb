@@ -38,6 +38,6 @@ go.work.sum
 # Log
 *.log
 
-# Config TOML file
-*.toml
-!*.toml.sample
+# Config YAML file
+*.yml
+!*.yml.sample
