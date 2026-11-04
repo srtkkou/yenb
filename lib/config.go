@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ type AppConfig struct {
 	commitHash string            // Commit hash.
 	commitAt   time.Time         // Commit date.
 	isDebug    bool              // Debug mode flag.
+	os         string            // Operating system.
 	exePath    string            // Path to executable.
 	userEnvs   map[string]string // Environment variables for user.
 	userPaths  []string          // Paths to add to user PATH env.
@@ -64,6 +66,7 @@ func Config() *AppConfig {
 			ctx:        context.Background(),
 			commitHash: "",
 			isDebug:    false,
+			os:         "unknown",
 		}
 	})
 	return configPtr
@@ -82,6 +85,8 @@ func (c *AppConfig) String() string {
 		c.commitAt.Format(time.RFC3339)))
 	b.WriteString(`,"isDebug":`)
 	b.WriteString(strconv.FormatBool(c.isDebug))
+	b.WriteString(`,"os":`)
+	b.WriteString(strconv.Quote(c.os))
 	b.WriteString(`,"exePath":`)
 	b.WriteString(strconv.Quote(c.exePath))
 	b.WriteString(`,"userEnvs":{`)
@@ -165,6 +170,13 @@ func (c *AppConfig) ExePath() string {
 	return c.exePath
 }
 
+// Get OS.
+func (c *AppConfig) OS() string {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	return c.os
+}
+
 // Get path to log file.
 func (c *AppConfig) LogPath() string {
 	ext := filepath.Ext(c.ExePath())
@@ -209,6 +221,7 @@ func (c *AppConfig) TOMLPath() string {
 
 // Load settings.
 func (c *AppConfig) Load() (err error) {
+	c.loadRuntime()
 	if err = c.loadExePath(); err != nil {
 		return err
 	}
@@ -216,6 +229,13 @@ func (c *AppConfig) Load() (err error) {
 		return err
 	}
 	return nil
+}
+
+// Load runtime information.
+func (c *AppConfig) loadRuntime() {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	c.os = runtime.GOOS
 }
 
 // Load absolute path to executable.
