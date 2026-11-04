@@ -89,10 +89,12 @@ func Log() *AppLogger {
 
 // エラーログの出力
 func (l *AppLogger) Errorf(msg string, err error) {
+	config := Config()
 	str := fmt.Sprintf("%+v", err)
 	rawJSON := json.RawMessage([]byte(str))
 	fmt.Fprintln(os.Stderr, str)
-	l.Error(msg, slog.Any("error", rawJSON))
+	l.ErrorContext(config.Context(), msg,
+		slog.Any("error", rawJSON))
 }
 
 // ログレベルをDebug以上にする。
