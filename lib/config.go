@@ -5,6 +5,7 @@ package lib
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -19,6 +20,7 @@ import (
 // Config for app.
 type AppConfig struct {
 	mtx        sync.RWMutex      // Mutex
+	ctx        context.Context   // Context
 	commitHash string            // Commit hash.
 	commitAt   time.Time         // Commit date.
 	isDebug    bool              // Debug mode flag.
@@ -59,6 +61,7 @@ var (
 func Config() *AppConfig {
 	configOnce.Do(func() {
 		configPtr = &AppConfig{
+			ctx:        context.Background(),
 			commitHash: "",
 			isDebug:    false,
 		}
@@ -101,6 +104,13 @@ func (c *AppConfig) String() string {
 	}
 	b.WriteString(`]}`)
 	return b.String()
+}
+
+// Get context.
+func (c *AppConfig) Context() context.Context {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	return c.ctx
 }
 
 // Update commit hash.
