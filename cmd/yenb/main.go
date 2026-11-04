@@ -25,17 +25,31 @@ func main() {
 	config := lib.Config()
 	if err := config.Load(); err != nil {
 		log.Fatalf("%+v\n", err)
+		os.Exit(1)
 	}
 	config.SetCommitHash(CommitHash)
 	config.SetCommitAt(CommitAt)
+	// Execute main func.
+	if err := mainFunc(); err != nil {
+		lib.Log().Errorf(err.Error(), err)
+		os.Exit(1)
+	}
+}
+
+func mainFunc() error {
 	// Initialize log.
+	config := lib.Config()
 	configJSON := json.RawMessage([]byte(config.String()))
 	lib.Log().InfoContext(config.Context(), "yenb:start",
 		slog.Any("config", configJSON))
 	// Initialize env variable editor.
-	_, err := lib.NewEnvEditor()
+	editor, err := lib.NewEnvEditor()
 	if err != nil {
-		lib.Log().Errorf(err.Error(), err)
-		os.Exit(1)
+		return err
 	}
+	// Set user env variables.
+	if err = editor.SetUserEnvs(); err != nil {
+		return err
+	}
+	return nil
 }

@@ -11,6 +11,7 @@ import (
 
 type EnvEditor interface {
 	IsImplemented() bool
+	SetUserEnvs() error
 }
 
 type EnvEditorBase struct{}

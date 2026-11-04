@@ -200,11 +200,25 @@ func (c *AppConfig) SetUserEnvs(m map[string]envVar) {
 	c.userEnvs = m
 }
 
+// Get user envs.
+func (c *AppConfig) UserEnvs() map[string]envVar {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	return c.userEnvs
+}
+
 // Update user paths.
 func (c *AppConfig) SetUserPaths(s []string) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	c.userPaths = s
+}
+
+// Get user paths.
+func (c *AppConfig) UserPaths() []string {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	return c.userPaths
 }
 
 // Get path to YAML file.
