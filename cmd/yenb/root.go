@@ -57,6 +57,8 @@ func (c *RootCmd) Exec(args []string) error {
 		return nil
 	case "install":
 		sub = newInstallCmd(c)
+	case "uninstall":
+		sub = newUninstallCmd(c)
 	default:
 		fmt.Println(c.usage())
 		return nil
