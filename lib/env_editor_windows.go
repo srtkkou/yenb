@@ -6,6 +6,7 @@ package lib
 import (
 	"errors"
 	"log/slog"
+	"strings"
 
 	"github.com/goark/errs"
 	reg "golang.org/x/sys/windows/registry"
@@ -39,17 +40,24 @@ func (e *EnvEditorImpl) SetUserEnvs() error {
 	for k, v := range config.UserEnvs() {
 		switch v.Type {
 		case "REG_EXPAND_SZ":
+			// Sanitize path.
+			value := v.Value
+			if config.OS() == "windows" {
+				value = strings.ReplaceAll(value, "/", `\`)
+				value = strings.ReplaceAll(value, "${", `%`)
+				value = strings.ReplaceAll(value, "}", `%`)
+			}
 			// Set value.
-			err = regKey.SetExpandStringValue(k, v.Value)
+			err = regKey.SetExpandStringValue(k, value)
 			if err != nil {
 				return errs.Wrap(ErrEnvEditorWinSetExpandSZ, errs.WithCause(err),
 					errs.WithContext("name", k),
-					errs.WithContext("value", v.Value))
+					errs.WithContext("value", value))
 			}
 			Log().InfoContext(config.Context(), "SetExpandStringValue",
 				slog.String("name", k),
 				slog.String("type", v.Type),
-				slog.String("value", v.Value))
+				slog.String("value", value))
 		}
 	}
 	return nil
