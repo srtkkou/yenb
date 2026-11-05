@@ -41,3 +41,6 @@ go.work.sum
 # Config YAML file
 *.yml
 !*.yml.sample
+
+# Script directory
+script
