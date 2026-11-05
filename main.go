@@ -35,7 +35,7 @@ func main() {
 	// Execute main command.
 	cmd := yenb.NewRootCmd()
 	if err := cmd.Exec(os.Args); err != nil {
-		lib.Log().Errorf("RootCmd.Exec", err)
+		lib.Log().Errorf("yenb.RootCmd.Exec()", err)
 		os.Exit(1)
 	}
 }
