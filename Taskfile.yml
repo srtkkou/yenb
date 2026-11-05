@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 includes:
   build: ./Taskfile_{{OS}}.yml
@@ -48,7 +48,7 @@ tasks:
   build:
     deps: [test]
     cmds:
-      - go build -ldflags "{{.FLAG_COMMIT_HASH}} {{.FLAG_COMMIT_AT}}" -o ./yenb.exe ./cmd/yenb/main.go
+      - go build -ldflags "{{.FLAG_COMMIT_HASH}} {{.FLAG_COMMIT_AT}}" -o ./yenb.exe ./main.go
     vars:
       FLAG_COMMIT_HASH: "-X main.CommitHash={{.COMMIT_HASH}}"
       FLAG_COMMIT_AT: "-X main.CommitAt={{.COMMIT_AT}}"
