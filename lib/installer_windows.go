@@ -19,7 +19,7 @@ import (
 
 const (
 	psScriptName = "yenb.ps1"
-	psTmplPath   = "ps1.tmpl"
+	psTmplPath   = "yenb.ps1.tmpl"
 )
 
 var (
