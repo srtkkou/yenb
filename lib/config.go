@@ -22,6 +22,7 @@ import (
 type AppConfig struct {
 	mtx        sync.RWMutex      // Mutex
 	ctx        context.Context   // Context
+	version    string            // Version.
 	commitHash string            // Commit hash.
 	commitAt   time.Time         // Commit date.
 	isDebug    bool              // Debug mode flag.
@@ -125,6 +126,20 @@ func (c *AppConfig) Context() context.Context {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 	return c.ctx
+}
+
+// Update version.
+func (c *AppConfig) SetVersion(str string) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	c.version = str
+}
+
+// Get version.
+func (c *AppConfig) Version() string {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	return c.version
 }
 
 // Update commit hash.
