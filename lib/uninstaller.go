@@ -5,6 +5,8 @@ package lib
 
 import (
 	"errors"
+	"log/slog"
+	"os"
 	"path/filepath"
 
 	"github.com/goark/errs"
@@ -27,6 +29,7 @@ type (
 
 var (
 	ErrUninstallerNotImplemented = errors.New("ErrUninstallerNotImplemented")
+	ErrUninstallerRemovePath     = errors.New("ErrUninstallerRemovePath")
 )
 
 func NewUninstaller() (Uninstaller, error) {
@@ -44,4 +47,17 @@ func NewUninstaller() (Uninstaller, error) {
 
 func (u *UninstallerBase) IsImplemented() bool {
 	return false
+}
+
+func (u *UninstallerBase) deleteScriptDir() (err error) {
+	if _, err = os.Stat(u.scriptDir); os.IsExist(err) {
+		if err = os.RemoveAll(u.scriptDir); err != nil {
+			return errs.Wrap(ErrUninstallerRemovePath,
+				errs.WithCause(err),
+				errs.WithContext("path", u.scriptDir))
+		}
+	}
+	Log().Info("Deleted script directory.",
+		slog.String("path", u.scriptDir))
+	return nil
 }
