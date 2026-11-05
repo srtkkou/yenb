@@ -18,7 +18,8 @@ import (
 
 // Root command.
 type RootCmd struct {
-	fs *pflag.FlagSet // Flag set.
+	fs     *pflag.FlagSet // Flag set.
+	isHelp bool           // Help flag.
 }
 
 // Sub command interface.
@@ -31,6 +32,9 @@ func NewRootCmd() *RootCmd {
 	c := &RootCmd{
 		fs: pflag.NewFlagSet("yenb", pflag.ExitOnError),
 	}
+	// Added flags.
+	c.fs.BoolVarP(&c.isHelp, "help", "h", false,
+		`Show help message.`)
 	return c
 }
 
@@ -69,7 +73,7 @@ func (c *RootCmd) Exec(args []string) error {
 
 func (c *RootCmd) usage() string {
 	var sb strings.Builder
-	fmt.Fprintln(&sb, "usage: yenb <subcommand> <args>")
+	fmt.Fprintln(&sb, "usage: yenb <subcommand> <options>")
 	fmt.Fprintln(&sb)
 	c.writeVersion(&sb)
 	fmt.Fprintln(&sb)
@@ -77,6 +81,9 @@ func (c *RootCmd) usage() string {
 	fmt.Fprintln(&sb, "  help      : Show help for sumcommand.")
 	fmt.Fprintln(&sb, "  install   : Install yenb.")
 	fmt.Fprintln(&sb, "  uninstall : Uninstall yenb.")
+	fmt.Fprintln(&sb)
+	fmt.Fprintln(&sb, "options:")
+	fmt.Fprintln(&sb, c.fs.FlagUsages())
 	return sb.String()
 }
 
