@@ -17,19 +17,19 @@ const (
 )
 
 var (
-	ErrEnvEditorWinOpenKey     = errors.New("ErrEnvEditorWinOpenKey")
-	ErrEnvEditorWinSetExpandSZ = errors.New("ErrEnvEditorWinSetExpandSZ")
+	ErrEnvWinOpenKey     = errors.New("ErrEnvWinOpenKey")
+	ErrEnvWinSetExpandSZ = errors.New("ErrEnvWinSetExpandSZ")
 )
 
-func (e *EnvEditorImpl) IsImplemented() bool {
+func (e *EnvImpl) IsImplemented() bool {
 	return true
 }
 
-func (e *EnvEditorImpl) SetUserEnvs() error {
+func (e *EnvImpl) SetUserEnvs() error {
 	// Open registry path.
 	regKey, err := reg.OpenKey(reg.CURRENT_USER, USER_ENV_PATH, reg.SET_VALUE)
 	if err != nil {
-		return errs.Wrap(ErrEnvEditorWinOpenKey, errs.WithCause(err),
+		return errs.Wrap(ErrEnvWinOpenKey, errs.WithCause(err),
 			errs.WithContext("key", reg.CURRENT_USER),
 			errs.WithContext("path", USER_ENV_PATH),
 			errs.WithContext("access", reg.SET_VALUE))
@@ -50,7 +50,7 @@ func (e *EnvEditorImpl) SetUserEnvs() error {
 			// Set value.
 			err = regKey.SetExpandStringValue(k, value)
 			if err != nil {
-				return errs.Wrap(ErrEnvEditorWinSetExpandSZ, errs.WithCause(err),
+				return errs.Wrap(ErrEnvWinSetExpandSZ, errs.WithCause(err),
 					errs.WithContext("name", k),
 					errs.WithContext("value", value))
 			}

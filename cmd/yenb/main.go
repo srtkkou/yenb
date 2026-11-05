@@ -42,13 +42,13 @@ func mainFunc() error {
 	configJSON := json.RawMessage([]byte(config.String()))
 	lib.Log().InfoContext(config.Context(), "yenb:start",
 		slog.Any("config", configJSON))
-	// Initialize env variable editor.
-	editor, err := lib.NewEnvEditor()
+	// Initialize env variable .
+	e, err := lib.NewEnv()
 	if err != nil {
 		return err
 	}
 	// Set user env variables.
-	if err = editor.SetUserEnvs(); err != nil {
+	if err = e.SetUserEnvs(); err != nil {
 		return err
 	}
 	return nil
