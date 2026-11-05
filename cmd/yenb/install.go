@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/goark/errs"
+
+	"github.com/srtkkou/yenb/lib"
 )
 
 type installCmd struct {
@@ -40,6 +42,15 @@ func (c *installCmd) exec(args []string) error {
 	// Parse args.
 	if err := c.fs.Parse(args); err != nil {
 		return errs.Wrap(ErrInstallCmdParseArgs)
+	}
+	// Initialize installer.
+	installer, err := lib.NewInstaller()
+	if err != nil {
+		return err
+	}
+	// Run installer.
+	if err = installer.Install(); err != nil {
+		return err
 	}
 	return nil
 }
