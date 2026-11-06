@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,7 +51,9 @@ const (
 	// Commit date format.
 	commitAtLayout = "20060102-150405"
 	// Log file ext.
-	logExt = "log"
+	logExt = ".log"
+	// YAML file ext.
+	ymlExt = ".yml"
 )
 
 var (
@@ -198,9 +201,10 @@ func (c *AppConfig) OS() string {
 
 // Get path to log file.
 func (c *AppConfig) LogPath() string {
-	ext := filepath.Ext(c.ExePath())
-	logPath := c.exePath[0:(len(c.exePath)-len(ext))] + "." + logExt
-	return logPath
+	exePath := c.ExePath()
+	ext := filepath.Ext(exePath)
+	path := strings.TrimSuffix(exePath, ext) + logExt
+	return path
 }
 
 // Update user envs.
@@ -235,7 +239,7 @@ func (c *AppConfig) UserPaths() []string {
 func (c *AppConfig) YAMLPath() string {
 	exePath := c.ExePath()
 	ext := filepath.Ext(exePath)
-	path := c.exePath[0:(len(exePath)-len(ext))] + ".yml"
+	path := strings.TrimSuffix(exePath, ext) + ymlExt
 	return path
 }
 
@@ -274,7 +278,7 @@ func (c *AppConfig) loadExePath() (err error) {
 	// 実行パスの更新
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
-	c.exePath = filepath.ToSlash(absPath)
+	c.exePath = absPath
 	return nil
 }
 

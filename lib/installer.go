@@ -46,8 +46,8 @@ func NewInstaller() (Installer, error) {
 	}
 	// Set script dir.
 	config := Config()
-	i.scriptDir = filepath.ToSlash(filepath.Join(
-		filepath.Dir(config.ExePath()), scriptDirName))
+	i.scriptDir = filepath.Join(
+		filepath.Dir(config.ExePath()), scriptDirName)
 	return i, nil
 }
 
