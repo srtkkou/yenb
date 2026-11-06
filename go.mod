@@ -7,7 +7,7 @@ tool honnef.co/go/tools/cmd/staticcheck
 require (
 	github.com/goark/errs v1.3.4
 	github.com/goccy/go-yaml v1.19.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	golang.org/x/sys v0.49.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
