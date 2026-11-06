@@ -4,7 +4,10 @@ Copyright © 2026 srtkkou <srtkkou@outlook.jp>
 package lib
 
 import (
+	"bufio"
 	"errors"
+	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -20,15 +23,24 @@ import (
 type InstallerImpl struct {
 	InstallerBase
 	psProfilePath string
+	psScriptPath  string
 }
 
 const (
-	psScriptName = "yenb.ps1"
-	psTmplPath   = "yenb.ps1.tmpl"
+	psScript = "yenb.ps1"
+	psTmpl   = "yenb.ps1.tmpl"
 )
 
 var (
-	ErrInstallerWindowsGetPSProfilePath = errors.New("ErrInstallerWindowsGetPSProfilePath")
+	ErrInstallerWindowsPSScriptTmplParse   = errors.New("ErrInstallerWindowsPSScriptTmplParse")
+	ErrInstallerWindowsPSScriptOpen        = errors.New("ErrInstallerWindowsPSScriptOpen")
+	ErrInstallerWindowsPSScirptTmplExecute = errors.New("ErrInstallerWindowsPSScirptTmplExecute")
+	ErrInstallerWindowsGetPSProfilePath    = errors.New("ErrInstallerWindowsGetPSProfilePath")
+	ErrInstallerWindowsCreatePSProfileDir  = errors.New("ErrInstallerWindowsCreatePSProfileDir")
+	ErrInstallerWindowsCreatePSProfile     = errors.New("ErrInstallerWindowsCreatePSProfile")
+	ErrInstallerWindowsUpdatePSProfile     = errors.New("ErrInstallerWindowsUpdatePSProfile")
+	ErrInstallerWindowsScanPSProfile       = errors.New("ErrInstallerWindowsScanPSProfile")
+	ErrInstallerWindowsSeekPSProfile       = errors.New("ErrInstallerWindowsSeekPSProfile")
 )
 
 func (i *InstallerImpl) IsImplemented() bool {
@@ -40,6 +52,8 @@ func (i *InstallerImpl) Install() (err error) {
 	if err = i.createScriptDir(); err != nil {
 		return err
 	}
+	// Get PowerShell script path.
+	i.psScriptPath = filepath.Join(i.scriptDir, psScript)
 	// Create PowerShell script.
 	if err = i.createPSScript(); err != nil {
 		return err
@@ -49,8 +63,41 @@ func (i *InstallerImpl) Install() (err error) {
 	if err != nil {
 		return err
 	}
-	// TODO: Append line to profile.
+	// Create or update PS profile.
+	if _, err = os.Stat(i.psProfilePath); os.IsNotExist(err) {
+		if err = i.createPSProfile(); err != nil {
+			return err
+		}
+	} else {
+		if err = i.updatePSProfile(); err != nil {
+			return err
+		}
+	}
+	// TODO: Create autorun batch.
 	// TODO: Write batch autorun path in registry.
+	return nil
+}
+
+func (i *InstallerImpl) createPSScript() (err error) {
+	// Initialize template.
+	psTmpl, err := tmpl.ParseFS(template.Files, psTmpl)
+	if err != nil {
+		return errs.Wrap(ErrInstallerWindowsPSScriptTmplParse,
+			errs.WithCause(err))
+	}
+	// Open file.
+	psFile, err := os.OpenFile(i.psScriptPath,
+		os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return errs.Wrap(ErrInstallerWindowsPSScriptOpen, errs.WithCause(err),
+			errs.WithContext("path", i.psScriptPath))
+	}
+	defer psFile.Close()
+	// Write to file.
+	if err = psTmpl.Execute(psFile, nil); err != nil {
+		return errs.Wrap(ErrInstallerWindowsPSScirptTmplExecute,
+			errs.WithCause(err))
+	}
 	return nil
 }
 
@@ -69,26 +116,59 @@ func (i *InstallerImpl) getPSProfilePath() (string, error) {
 	return path, nil
 }
 
-func (i *InstallerImpl) createPSScript() (err error) {
-	// Initialize template.
-	psTmpl, err := tmpl.ParseFS(template.Files, psTmplPath)
+func (i *InstallerImpl) createPSProfile() (err error) {
+	// Create directory.
+	dirPath := filepath.Dir(i.psProfilePath)
+	if err = os.MkdirAll(dirPath, 0o755); err != nil {
+		return errs.Wrap(ErrInstallerWindowsCreatePSProfileDir,
+			errs.WithCause(err), errs.WithContext("path", dirPath))
+	}
+	// Create profile.
+	f, err := os.OpenFile(i.psProfilePath, os.O_WRONLY|os.O_CREATE, 0o644)
 	if err != nil {
-		return errs.Wrap(ErrInstallerTmplParse,
-			errs.WithCause(err))
+		return errs.Wrap(ErrInstallerWindowsCreatePSProfile,
+			errs.WithCause(err), errs.WithContext("path", i.psProfilePath))
 	}
-	// Open file.
-	psPath := filepath.Join(i.scriptDir, psScriptName)
-	psFile, err := os.OpenFile(psPath,
-		os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	defer f.Close()
+	// Append lines to profile.
+	fmt.Fprintln(f, `# Below lines are added by yenb.`)
+	fmt.Fprintln(f, "&", i.psScriptPath)
+	fmt.Fprintln(f, `# Above lines are added by yenb.`)
+	Log().Info("Created new PS profile.",
+		slog.String("path", i.psProfilePath))
+	return nil
+}
+
+func (i *InstallerImpl) updatePSProfile() (err error) {
+	f, err := os.OpenFile(i.psProfilePath, os.O_RDWR, 0o644)
 	if err != nil {
-		return errs.Wrap(ErrInstallerOpenFile, errs.WithCause(err),
-			errs.WithContext("path", psPath))
+		return errs.Wrap(ErrInstallerWindowsUpdatePSProfile,
+			errs.WithCause(err), errs.WithContext("path", i.psProfilePath))
 	}
-	defer psFile.Close()
-	// Write to file.
-	if err = psTmpl.Execute(psFile, nil); err != nil {
-		return errs.Wrap(ErrInstallerTmplExecute,
-			errs.WithCause(err))
+	defer f.Close()
+	// Scan lines and check if yenb lines exist.
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		line := s.Text()
+		if strings.Contains(line, "yenb") {
+			Log().Info("yenb is already installed in profile.")
+			return nil
+		}
 	}
+	if err = s.Err(); err != nil {
+		return errs.Wrap(ErrInstallerWindowsScanPSProfile,
+			errs.WithCause(err), errs.WithContext("path", i.psProfilePath))
+	}
+	// Go to end of file.
+	if _, err = f.Seek(0, io.SeekEnd); err != nil {
+		return errs.Wrap(ErrInstallerWindowsSeekPSProfile,
+			errs.WithCause(err), errs.WithContext("path", i.psProfilePath))
+	}
+	// Append lines to PS profile.
+	fmt.Fprintln(f, `# Below lines are added by yenb.`)
+	fmt.Fprintln(f, "&", i.psScriptPath)
+	fmt.Fprintln(f, `# Above lines are added by yenb.`)
+	Log().Info("Updated PS profile.",
+		slog.String("path", i.psProfilePath))
 	return nil
 }
