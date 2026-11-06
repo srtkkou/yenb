@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	tmpl "text/template"
 
@@ -32,6 +33,13 @@ const (
 )
 
 var (
+	rePSPolicy = regexp.MustCompile(`CurrentUser\s+([a-zA-Z]+)`)
+)
+
+var (
+	ErrInstallerWindowsGetPSPolicyStdout   = errors.New("ErrInstallerWindowsGetPSPolicy")
+	ErrInstallerWindowsGetPSPolicyCmdStart = errors.New("ErrInstallerWindowsGetPSPolicyCmdStart")
+	ErrInstallerWindowsGetPSPolicyScan     = errors.New("ErrInstallerWindowsGetPSPolicyScan")
 	ErrInstallerWindowsPSScriptTmplParse   = errors.New("ErrInstallerWindowsPSScriptTmplParse")
 	ErrInstallerWindowsPSScriptOpen        = errors.New("ErrInstallerWindowsPSScriptOpen")
 	ErrInstallerWindowsPSScirptTmplExecute = errors.New("ErrInstallerWindowsPSScirptTmplExecute")
@@ -48,6 +56,12 @@ func (i *InstallerImpl) IsImplemented() bool {
 }
 
 func (i *InstallerImpl) Install() (err error) {
+	// Get PS script policy.
+	policy, err := i.getPSPolicy()
+	if err != nil {
+		return err
+	}
+	Log().Info("PS Script execution policy", slog.String("policy", policy))
 	// Create script directory.
 	if err = i.createScriptDir(); err != nil {
 		return err
@@ -76,6 +90,44 @@ func (i *InstallerImpl) Install() (err error) {
 	// TODO: Create autorun batch.
 	// TODO: Write batch autorun path in registry.
 	return nil
+}
+
+func (i *InstallerImpl) getPSPolicy() (string, error) {
+	config := Config()
+	cmd := exec.CommandContext(config.Context(),
+		"PowerShell.exe", "-Command",
+		"Get-ExecutionPolicy", "-List")
+	// Connect STDOUT pipe.
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		err = errs.Wrap(ErrInstallerWindowsGetPSPolicyStdout,
+			errs.WithCause(err))
+		return "", err
+	}
+	defer out.Close()
+	// Start command.
+	if err = cmd.Start(); err != nil {
+		err = errs.Wrap(ErrInstallerWindowsGetPSPolicyCmdStart,
+			errs.WithCause(err))
+		return "", err
+	}
+	// Read stdout.
+	policy := "Undefined"
+	s := bufio.NewScanner(out)
+	for s.Scan() {
+		line := s.Text()
+		matches := rePSPolicy.FindStringSubmatch(line)
+		if len(matches) == 2 {
+			policy = matches[1]
+			continue
+		}
+	}
+	if err = s.Err(); err != nil {
+		err = errs.Wrap(ErrInstallerWindowsGetPSPolicyScan,
+			errs.WithCause(err))
+		return "", err
+	}
+	return policy, nil
 }
 
 func (i *InstallerImpl) createPSScript() (err error) {
