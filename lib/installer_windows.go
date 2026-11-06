@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	ErrInstallerWindowsGetPowerShellProfilePath = errors.New("ErrInstallerWindowsGetPowerShellProfilePath")
+	ErrInstallerWindowsGetPSProfilePath = errors.New("ErrInstallerWindowsGetPSProfilePath")
 )
 
 func (i *InstallerImpl) IsImplemented() bool {
@@ -45,19 +45,28 @@ func (i *InstallerImpl) Install() (err error) {
 		return err
 	}
 	// Get PowerShell profile path.
-	out, err := exec.Command("PowerShell.exe",
-		"-Command", `$profile`).Output()
+	i.psProfilePath, err = i.getPSProfilePath()
 	if err != nil {
-		return errs.Wrap(ErrInstallerWindowsGetPowerShellProfilePath,
-			errs.WithCause(err))
+		return err
 	}
-	// Sanitize output.
-	i.psProfilePath = strings.TrimSpace(string(out))
-	Log().Info("PowerShell profile path",
-		slog.String("path", i.psProfilePath))
 	// TODO: Append line to profile.
 	// TODO: Write batch autorun path in registry.
 	return nil
+}
+
+func (i *InstallerImpl) getPSProfilePath() (string, error) {
+	out, err := exec.Command("PowerShell.exe",
+		"-Command", `$profile`).Output()
+	if err != nil {
+		err = errs.Wrap(ErrInstallerWindowsGetPSProfilePath,
+			errs.WithCause(err))
+		return "", err
+	}
+	// Sanitize output.
+	path := strings.TrimSpace(string(out))
+	Log().Info("PowerShell profile path",
+		slog.String("path", path))
+	return path, nil
 }
 
 func (i *InstallerImpl) createPSScript() (err error) {
