@@ -44,6 +44,10 @@ func NewInstaller() (Installer, error) {
 		err := errs.Wrap(ErrUninstallerNotImplemented)
 		return nil, err
 	}
+	// Set script dir.
+	config := Config()
+	i.scriptDir = filepath.ToSlash(filepath.Join(
+		filepath.Dir(config.ExePath()), scriptDirName))
 	return i, nil
 }
 
@@ -53,9 +57,6 @@ func (i *InstallerBase) IsImplemented() bool {
 
 // Create script directory.
 func (i *InstallerBase) createScriptDir() (err error) {
-	config := Config()
-	i.scriptDir = filepath.Join(
-		filepath.Dir(config.ExePath()), scriptDirName)
 	if _, err = os.Stat(i.scriptDir); os.IsNotExist(err) {
 		if err = os.Mkdir(i.scriptDir, 0o755); err != nil {
 			return errs.Wrap(ErrInstallerMkdir, errs.WithCause(err),
