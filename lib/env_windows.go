@@ -12,6 +12,10 @@ import (
 	reg "golang.org/x/sys/windows/registry"
 )
 
+type EnvImpl struct {
+	EnvBase
+}
+
 const (
 	USER_ENV_PATH = "Environment"
 )

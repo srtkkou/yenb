@@ -16,10 +16,6 @@ type Env interface {
 
 type EnvBase struct{}
 
-type EnvImpl struct {
-	EnvBase
-}
-
 var (
 	ErrEnvNotImplemented = errors.New("ErrEnvNotImplemented")
 )

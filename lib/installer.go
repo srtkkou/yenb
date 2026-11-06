@@ -16,15 +16,9 @@ type Installer interface {
 	Install() error
 }
 
-type (
-	InstallerBase struct {
-		scriptDir string // Path to script directory.
-	}
-
-	InstallerImpl struct {
-		InstallerBase
-	}
-)
+type InstallerBase struct {
+	scriptDir string // Path to script directory.
+}
 
 const (
 	scriptDirName = "script"

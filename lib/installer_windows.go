@@ -17,6 +17,11 @@ import (
 	"github.com/srtkkou/yenb/template"
 )
 
+type InstallerImpl struct {
+	InstallerBase
+	psProfilePath string
+}
+
 const (
 	psScriptName = "yenb.ps1"
 	psTmplPath   = "yenb.ps1.tmpl"
@@ -47,9 +52,9 @@ func (i *InstallerImpl) Install() (err error) {
 			errs.WithCause(err))
 	}
 	// Sanitize output.
-	psProfilePath := strings.TrimSpace(string(out))
+	i.psProfilePath = strings.TrimSpace(string(out))
 	Log().Info("PowerShell profile path",
-		slog.String("path", psProfilePath))
+		slog.String("path", i.psProfilePath))
 	// TODO: Append line to profile.
 	// TODO: Write batch autorun path in registry.
 	return nil

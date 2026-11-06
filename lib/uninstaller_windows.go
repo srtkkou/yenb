@@ -3,6 +3,10 @@ Copyright © 2026 srtkkou <srtkkou@outlook.jp>
 */
 package lib
 
+type UninstallerImpl struct {
+	UninstallerBase
+}
+
 func (u *UninstallerImpl) IsImplemented() bool {
 	return true
 }

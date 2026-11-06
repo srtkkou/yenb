@@ -17,15 +17,9 @@ type Uninstaller interface {
 	Uninstall() error
 }
 
-type (
-	UninstallerBase struct {
-		scriptDir string
-	}
-
-	UninstallerImpl struct {
-		UninstallerBase
-	}
-)
+type UninstallerBase struct {
+	scriptDir string
+}
 
 var (
 	ErrUninstallerNotImplemented = errors.New("ErrUninstallerNotImplemented")
@@ -56,8 +50,8 @@ func (u *UninstallerBase) deleteScriptDir() (err error) {
 				errs.WithCause(err),
 				errs.WithContext("path", u.scriptDir))
 		}
+		Log().Info("Deleted script directory.",
+			slog.String("path", u.scriptDir))
 	}
-	Log().Info("Deleted script directory.",
-		slog.String("path", u.scriptDir))
 	return nil
 }
