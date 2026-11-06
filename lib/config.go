@@ -7,10 +7,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"sync"
 	"time"
 
@@ -80,45 +80,40 @@ func Config() *AppConfig {
 	return configPtr
 }
 
-// Stringify AppConfig.
-func (c *AppConfig) String() string {
+// Marshal to JSON.
+func (c *AppConfig) MarshalJSON() ([]byte, error) {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 	var b bytes.Buffer
-	b.WriteString(`{"type":"AppConfig"`)
-	b.WriteString(`,"commitHash":`)
-	b.WriteString(strconv.Quote(c.commitHash))
-	b.WriteString(`,"commitAt":`)
-	b.WriteString(strconv.Quote(
-		c.commitAt.Format(time.RFC3339)))
-	b.WriteString(`,"isDebug":`)
-	b.WriteString(strconv.FormatBool(c.isDebug))
-	b.WriteString(`,"os":`)
-	b.WriteString(strconv.Quote(c.os))
-	b.WriteString(`,"exePath":`)
-	b.WriteString(strconv.Quote(c.exePath))
-	b.WriteString(`,"userEnvs":{`)
+	fmt.Fprintf(&b, `{"commitHash":%q`, c.commitHash)
+	fmt.Fprintf(&b, `,"commitAt":%q`,
+		c.commitAt.Format(time.RFC3339))
+	fmt.Fprintf(&b, `,"isDebug":%t`, c.isDebug)
+	fmt.Fprintf(&b, `,"os":%q`, c.os)
+	fmt.Fprintf(&b, `,"exePath":%q`, c.exePath)
+	fmt.Fprintf(&b, `,"userEnvs":{`)
 	if len(c.userEnvs) > 0 {
 		for k, v := range c.userEnvs {
-			b.WriteString(strconv.Quote(k))
-			b.WriteString(`:{"type":`)
-			b.WriteString(strconv.Quote(v.Type))
-			b.WriteString(`,"value":`)
-			b.WriteString(strconv.Quote(v.Value))
-			b.WriteString(`},`)
+			fmt.Fprintf(&b, `%q:{"type":%q,"value":%q},`,
+				k, v.Type, v.Value)
 		}
 		b.Truncate(b.Len() - 1)
 	}
-	b.WriteString(`},"userPaths":[`)
+	fmt.Fprintf(&b, `},"userPaths":[`)
 	if len(c.userPaths) > 0 {
 		for _, path := range c.userPaths {
-			b.WriteString(strconv.Quote(path))
-			b.WriteString(`,`)
+			fmt.Fprintf(&b, `%q,`, path)
 		}
 		b.Truncate(b.Len() - 1)
 	}
-	b.WriteString(`]}`)
-	return b.String()
+	fmt.Fprintf(&b, `]}`)
+	return b.Bytes(), nil
+}
+
+// Stringify AppConfig.
+func (c *AppConfig) String() string {
+	blob, _ := c.MarshalJSON()
+	return string(blob)
 }
 
 // Get context.

@@ -65,7 +65,7 @@ func (c *RootCmd) Exec(args []string) error {
 	}
 	// Initialize log.
 	config := lib.Config()
-	configBlob := []byte(config.String())
+	configBlob, _ := config.MarshalJSON()
 	lib.Log().InfoContext(config.Context(), "yenb:start",
 		slog.String("subcommand", args[1]),
 		slog.Any("config", json.RawMessage(configBlob)))
