@@ -5,6 +5,7 @@ package lib
 
 import (
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -25,11 +26,8 @@ const (
 )
 
 var (
-	ErrInstallerNotImplemented = errors.New("ErrInstallerNotImplemented")
-	ErrInstallerTmplParse      = errors.New("ErrInstallerTmplParse")
-	ErrInstallerTmplExecute    = errors.New("ErrInstallerTmplExecute")
-	ErrInstallerMkdir          = errors.New("ErrInstallerMkdir")
-	ErrInstallerOpenFile       = errors.New("ErrInstallerOpenFile")
+	ErrInstallerNotImplemented  = errors.New("ErrInstallerNotImplemented")
+	ErrInstallerCreateScriptDir = errors.New("ErrInstallerCreateScriptDir")
 )
 
 func NewInstaller() (Installer, error) {
@@ -53,9 +51,11 @@ func (i *InstallerBase) IsImplemented() bool {
 func (i *InstallerBase) createScriptDir() (err error) {
 	if _, err = os.Stat(i.scriptDir); os.IsNotExist(err) {
 		if err = os.Mkdir(i.scriptDir, 0o755); err != nil {
-			return errs.Wrap(ErrInstallerMkdir, errs.WithCause(err),
+			return errs.Wrap(ErrInstallerCreateScriptDir, errs.WithCause(err),
 				errs.WithContext("path", i.scriptDir))
 		}
+		Log().Info("Created script dir.",
+			slog.String("path", i.scriptDir))
 	}
 	return nil
 }
