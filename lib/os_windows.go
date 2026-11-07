@@ -40,7 +40,7 @@ var (
 )
 
 func GetPSExecutionPolicy() (PSExecutionPolicy, error) {
-	stdout, err := invoke(powerShell, "-Command",
+	stdout, err := Invoke(powerShell, "-Command",
 		"Get-ExecutionPolicy", "-List")
 	if err != nil {
 		return PolicyUndefined, err

@@ -26,6 +26,7 @@ var (
 	ErrOSInvokeCmdStart   = errors.New("ErrOSInvodeCmdStart")
 	ErrOSInvokeReadStdout = errors.New("ErrOSInvokeReadStdout")
 	ErrOSInvokeReadStderr = errors.New("ErrOSInvokeReadStderr")
+	ErrOSInvokeCmdWait    = errors.New("ErrOSInvokeCmdWait")
 	ErrOSInvokeCmdErr     = errors.New("ErrOSInvokeCmdErr")
 	ErrOSUTF8Convert      = errors.New("ErrOSUTF8Convert")
 )
@@ -41,7 +42,7 @@ func MkdirAll(path string) (err error) {
 	return nil
 }
 
-func invoke(command string, args ...string) (string, error) {
+func Invoke(command string, args ...string) (string, error) {
 	// Initialize command.
 	config := Config()
 	cmd := exec.CommandContext(config.Context(), command, args...)
@@ -82,6 +83,12 @@ func invoke(command string, args ...string) (string, error) {
 			errs.WithContext("command", commandStr))
 		return "", err
 	}
+	// Wait for command to finish.
+	if err = cmd.Wait(); err != nil {
+		err = errs.Wrap(ErrOSInvokeCmdWait, errs.WithCause(err),
+			errs.WithContext("command", commandStr))
+		return "", err
+	}
 	// Format STDOUT.
 	stdoutUTF8Blob, err := toUTF8(stdoutBlob)
 	if err != nil {
@@ -101,7 +108,7 @@ func invoke(command string, args ...string) (string, error) {
 			errs.WithContext("stderr", stderr))
 		return "", err
 	}
-	Log().Info("invoke", slog.String("command", commandStr),
+	Log().Info("Invoke", slog.String("command", commandStr),
 		slog.String("stdout", stdout), slog.String("stderr", stderr))
 	return stdout, nil
 }
