@@ -87,7 +87,19 @@ func Log() *AppLogger {
 	return appLoggerPtr
 }
 
-// エラーログの出力
+// DEBUGログの出力
+func (l *AppLogger) DebugLog(msg string, args ...any) {
+	config := Config()
+	l.DebugContext(config.Context(), msg, args...)
+}
+
+// INFOログの出力
+func (l *AppLogger) InfoLog(msg string, args ...any) {
+	config := Config()
+	l.InfoContext(config.Context(), msg, args...)
+}
+
+// ERRORログの出力
 func (l *AppLogger) Errorf(msg string, err error) {
 	config := Config()
 	str := fmt.Sprintf("%+v", err)
