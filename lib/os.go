@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"os/exec"
 	"strings"
 	"unicode/utf8"
@@ -19,6 +20,7 @@ import (
 )
 
 var (
+	ErrOSMkdirAll         = errors.New("ErrOSMkdirAll")
 	ErrOSInvokePipeStdout = errors.New("ErrOSInvokePipeStdout")
 	ErrOSInvokePipeStderr = errors.New("ErrOSInvokePipeStderr")
 	ErrOSInvokeCmdStart   = errors.New("ErrOSInvodeCmdStart")
@@ -27,6 +29,17 @@ var (
 	ErrOSInvokeCmdErr     = errors.New("ErrOSInvokeCmdErr")
 	ErrOSUTF8Convert      = errors.New("ErrOSUTF8Convert")
 )
+
+func MkdirAll(path string) (err error) {
+	if _, err = os.Stat(path); os.IsNotExist(err) {
+		if err = os.MkdirAll(path, 0o755); err != nil {
+			return errs.Wrap(ErrOSMkdirAll, errs.WithCause(err),
+				errs.WithContext("path", path))
+		}
+		Log().Info("Created directory.", slog.String("path", path))
+	}
+	return nil
+}
 
 func invoke(command string, args ...string) (string, error) {
 	// Initialize command.
