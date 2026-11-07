@@ -38,7 +38,7 @@ func MkdirAll(path string) (err error) {
 			return errs.Wrap(ErrOSMkdirAll, errs.WithCause(err),
 				errs.WithContext("path", path))
 		}
-		Log().Info("Created directory.", slog.String("path", path))
+		Log().InfoLog("Created directory.", slog.String("path", path))
 	}
 	return nil
 }
@@ -49,7 +49,7 @@ func RemoveAll(path string) (err error) {
 			return errs.Wrap(ErrOSRemoveAll, errs.WithCause(err),
 				errs.WithContext("path", path))
 		}
-		Log().Info("Deleted directory.", slog.String("path", path))
+		Log().InfoLog("Deleted directory.", slog.String("path", path))
 	}
 	return nil
 }
@@ -120,7 +120,7 @@ func Invoke(command string, args ...string) (string, error) {
 			errs.WithContext("stderr", stderr))
 		return "", err
 	}
-	Log().Info("Invoke", slog.String("command", commandStr),
+	Log().InfoLog("Invoke", slog.String("command", commandStr),
 		slog.String("stdout", stdout), slog.String("stderr", stderr))
 	return stdout, nil
 }

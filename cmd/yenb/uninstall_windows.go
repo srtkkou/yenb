@@ -24,6 +24,6 @@ func (c *uninstallCmd) exec(args []string) (err error) {
 	if err := c.fs.Parse(args); err != nil {
 		return errs.Wrap(ErrUninstallCmdParseArgs)
 	}
-	lib.Log().Info("Uninstalled yenb.")
+	lib.Log().InfoLog("Uninstalled yenb.")
 	return nil
 }
