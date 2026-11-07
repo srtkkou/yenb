@@ -44,29 +44,26 @@ var (
 )
 
 var (
-	ErrOSWindowsOpenRegistryKey     = errors.New("ErrOSWindowsOpenRegistryKey")
-	ErrOSWindowsSetExpandSZ = errors.New("ErrOSWindowsSetExpandSZ")
+	ErrOSWindowsOpenRegistryKey = errors.New("ErrOSWindowsOpenRegistryKey")
+	ErrOSWindowsSetExpandSZ     = errors.New("ErrOSWindowsSetExpandSZ")
 )
 
-func SetRegExpandSZ(key reg.Key, path, name, value string) error {
-	// Open registry path.
-	regKey, err := reg.OpenKey(key, path, reg.SET_VALUE)
+func SetRegExpandSZ(key reg.Key, path, name, value string) (err error) {
+	// Set registry value.
+	err = setRegValue(key, path, func(regKey reg.Key) error {
+		// Set REG_EXPAND_SZ value.
+		err = regKey.SetExpandStringValue(name, value)
+		if err != nil {
+			return errs.Wrap(ErrOSWindowsSetExpandSZ, errs.WithCause(err),
+				errs.WithContext("key", key),
+				errs.WithContext("path", path),
+				errs.WithContext("name", name),
+				errs.WithContext("value", value))
+		}
+		return nil
+	})
 	if err != nil {
-		return errs.Wrap(ErrOSWindowsOpenRegistryKey, errs.WithCause(err),
-			errs.WithContext("key", key),
-			errs.WithContext("path", path),
-			errs.WithContext("name", name),
-			errs.WithContext("value", value))
-	}
-	defer regKey.Close()
-	// Set REG_EXPAND_SZ value.
-	err = regKey.SetExpandStringValue(name, value)
-	if err != nil {
-		return errs.Wrap(ErrOSWindowsSetExpandSZ, errs.WithCause(err),
-			errs.WithContext("key", key),
-			errs.WithContext("path", path),
-			errs.WithContext("name", name),
-			errs.WithContext("value", value))
+		return err
 	}
 	Log().InfoLog("SetRegExpandSZ",
 		slog.Any("key", key),
@@ -114,4 +111,20 @@ func ToPSExecutionPolicyScope(str string) PSExecutionPolicyScope {
 	default:
 		return ScopeProcess
 	}
+}
+
+func setRegValue(key reg.Key, path string, fn func(regKey reg.Key) error) error {
+	// Open registry key.
+	regKey, err := reg.OpenKey(key, path, reg.SET_VALUE)
+	if err != nil {
+		return errs.Wrap(ErrOSWindowsOpenRegistryKey, errs.WithCause(err),
+			errs.WithContext("key", key),
+			errs.WithContext("path", path))
+	}
+	defer regKey.Close()
+	// Set value with func.
+	if err = fn(regKey); err != nil {
+		return err
+	}
+	return nil
 }
