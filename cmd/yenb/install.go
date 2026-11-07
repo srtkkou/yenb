@@ -7,13 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/goark/errs"
-
-	"github.com/srtkkou/yenb/lib"
 )
 
-type installCmd struct {
+type installCmdBase struct {
 	RootCmd
 }
 
@@ -21,14 +17,7 @@ var (
 	ErrInstallCmdParseArgs = errors.New("ErrInstallCmdParseArgs")
 )
 
-func newInstallCmd(cmd *RootCmd) *installCmd {
-	c := &installCmd{
-		RootCmd: *cmd,
-	}
-	return c
-}
-
-func (c *installCmd) usage() string {
+func (c *installCmdBase) usage() string {
 	var sb strings.Builder
 	fmt.Fprintln(&sb, "usage: yenb install <args>")
 	fmt.Fprintln(&sb)
@@ -36,21 +25,4 @@ func (c *installCmd) usage() string {
 	fmt.Fprintln(&sb)
 	fmt.Fprintln(&sb, "args:")
 	return sb.String()
-}
-
-func (c *installCmd) exec(args []string) error {
-	// Parse args.
-	if err := c.fs.Parse(args); err != nil {
-		return errs.Wrap(ErrInstallCmdParseArgs)
-	}
-	// Initialize installer.
-	installer, err := lib.NewInstaller()
-	if err != nil {
-		return err
-	}
-	// Run installer.
-	if err = installer.Install(); err != nil {
-		return err
-	}
-	return nil
 }
