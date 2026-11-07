@@ -33,7 +33,7 @@ var (
 func NewInstaller() (Installer, error) {
 	i := &InstallerImpl{}
 	if !i.IsImplemented() {
-		err := errs.Wrap(ErrUninstallerNotImplemented)
+		err := errs.Wrap(ErrInstallerNotImplemented)
 		return nil, err
 	}
 	// Set script dir.
