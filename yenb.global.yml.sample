@@ -1,0 +1,5 @@
+version: "1"
+
+yenb:
+  node_install_dir: D:\app\yenb\node
+  go_install_dir: D:\app\yenb\go
