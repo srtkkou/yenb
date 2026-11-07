@@ -21,6 +21,7 @@ import (
 
 var (
 	ErrOSMkdirAll         = errors.New("ErrOSMkdirAll")
+	ErrOSRemoveAll        = errors.New("ErrOSRemoveAll")
 	ErrOSInvokePipeStdout = errors.New("ErrOSInvokePipeStdout")
 	ErrOSInvokePipeStderr = errors.New("ErrOSInvokePipeStderr")
 	ErrOSInvokeCmdStart   = errors.New("ErrOSInvodeCmdStart")
@@ -38,6 +39,17 @@ func MkdirAll(path string) (err error) {
 				errs.WithContext("path", path))
 		}
 		Log().Info("Created directory.", slog.String("path", path))
+	}
+	return nil
+}
+
+func RemoveAll(path string) (err error) {
+	if _, err = os.Stat(path); os.IsExist(err) {
+		if err = os.RemoveAll(path); err != nil {
+			return errs.Wrap(ErrOSRemoveAll, errs.WithCause(err),
+				errs.WithContext("path", path))
+		}
+		Log().Info("Deleted directory.", slog.String("path", path))
 	}
 	return nil
 }
