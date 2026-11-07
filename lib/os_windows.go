@@ -46,6 +46,7 @@ var (
 var (
 	ErrOSWindowsOpenRegistryKey = errors.New("ErrOSWindowsOpenRegistryKey")
 	ErrOSWindowsSetExpandSZ     = errors.New("ErrOSWindowsSetExpandSZ")
+	ErrOSWindowsDeleteValue     = errors.New("ErrOSWindowsDeleteValue")
 )
 
 func SetRegExpandSZ(key reg.Key, path, name, value string) (err error) {
@@ -70,6 +71,28 @@ func SetRegExpandSZ(key reg.Key, path, name, value string) (err error) {
 		slog.String("path", path),
 		slog.String("name", name),
 		slog.String("value", value))
+	return nil
+}
+
+func DeleteRegValue(key reg.Key, path, name string) (err error) {
+	err = setRegValue(key, path, func(regKey reg.Key) error {
+		// Set REG_EXPAND_SZ value.
+		err = regKey.DeleteValue(name)
+		if err != nil {
+			return errs.Wrap(ErrOSWindowsDeleteValue, errs.WithCause(err),
+				errs.WithContext("key", key),
+				errs.WithContext("path", path),
+				errs.WithContext("name", name))
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	Log().InfoLog("DeleteRegValue",
+		slog.Any("key", key),
+		slog.String("path", path),
+		slog.String("name", name))
 	return nil
 }
 
