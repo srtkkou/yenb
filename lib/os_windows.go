@@ -4,9 +4,13 @@ Copyright © 2026 srtkkou <srtkkou@outlook.jp>
 package lib
 
 import (
+	"errors"
 	"log/slog"
 	"regexp"
 	"strings"
+
+	"github.com/goark/errs"
+	reg "golang.org/x/sys/windows/registry"
 )
 
 type PSExecutionPolicy string
@@ -39,6 +43,39 @@ var (
 	rePSExecutionPolicy = regexp.MustCompile(`CurrentUser\s+([a-zA-Z]+)`)
 )
 
+var (
+	ErrOSWindowsOpenRegistryKey     = errors.New("ErrOSWindowsOpenRegistryKey")
+	ErrOSWindowsSetExpandSZ = errors.New("ErrOSWindowsSetExpandSZ")
+)
+
+func SetRegExpandSZ(key reg.Key, path, name, value string) error {
+	// Open registry path.
+	regKey, err := reg.OpenKey(key, path, reg.SET_VALUE)
+	if err != nil {
+		return errs.Wrap(ErrOSWindowsOpenRegistryKey, errs.WithCause(err),
+			errs.WithContext("key", key),
+			errs.WithContext("path", path),
+			errs.WithContext("name", name),
+			errs.WithContext("value", value))
+	}
+	defer regKey.Close()
+	// Set REG_EXPAND_SZ value.
+	err = regKey.SetExpandStringValue(name, value)
+	if err != nil {
+		return errs.Wrap(ErrOSWindowsSetExpandSZ, errs.WithCause(err),
+			errs.WithContext("key", key),
+			errs.WithContext("path", path),
+			errs.WithContext("name", name),
+			errs.WithContext("value", value))
+	}
+	Log().InfoLog("SetRegExpandSZ",
+		slog.Any("key", key),
+		slog.String("path", path),
+		slog.String("name", name),
+		slog.String("value", value))
+	return nil
+}
+
 func GetPSExecutionPolicy() (PSExecutionPolicy, error) {
 	stdout, err := Invoke(powerShell, "-Command",
 		"Get-ExecutionPolicy", "-List")
@@ -54,7 +91,7 @@ func GetPSExecutionPolicy() (PSExecutionPolicy, error) {
 			continue
 		}
 	}
-	Log().Info("PowerShell execution policy of current user.",
+	Log().InfoLog("PowerShell execution policy of current user.",
 		slog.String("policy", policyStr))
 	return ToPSExecutionPolicy(policyStr), nil
 }
